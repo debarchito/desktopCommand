@@ -18,6 +18,7 @@ DesktopPluginComponent {
     property int cols: 0
     property var windowRef: null
     property int fontSizePx: normalizeFontSize(pluginData.fontSize)
+    property real backgroundOpacity: (pluginData.backgroundOpacity ?? 50) / 100
     property string pluginUrl: ""
     property string pluginDir: ""
     property string wrapCommandPath: ""
@@ -64,24 +65,6 @@ DesktopPluginComponent {
     }
 
     onCommandChanged: {
-        if (!root.isRunnable()) {
-            root.hasRunInitial = false
-            timer.stop()
-            return
-        }
-        if (!root.hasRunInitial) {
-            root.hasRunInitial = true
-            runCommand()
-            timer.running = root.autoRefresh && root.isRunnable()
-        } else {
-            runCommand()
-            if (root.autoRefresh) {
-                timer.restart()
-            }
-        }
-    }
-
-    onFontSizePxChanged: {
         if (!root.isRunnable()) {
             root.hasRunInitial = false
             timer.stop()
@@ -199,7 +182,7 @@ DesktopPluginComponent {
     Rectangle {
         anchors.fill: parent
         radius: Theme.cornerRadius
-        color: Theme.withAlpha(Theme.surfaceContainer, 0.85)
+        color: Theme.withAlpha(Theme.surfaceContainer, root.backgroundOpacity)
         visible: root.visible
 
         Text {

@@ -17,6 +17,30 @@ import time
 import sys
 from typing import List, Dict, Any
 
+BASIC_COLORS = (
+    "#000000",
+    "#800000",
+    "#008000",
+    "#808000",
+    "#000080",
+    "#800080",
+    "#008080",
+    "#c0c0c0",
+)
+
+BRIGHT_COLORS = (
+    "#808080",
+    "#ff0000",
+    "#00ff00",
+    "#ffff00",
+    "#0000ff",
+    "#ff00ff",
+    "#00ffff",
+    "#ffffff",
+)
+
+ALL_COLORS = BASIC_COLORS + BRIGHT_COLORS
+
 def create_state() -> Dict[str, Any]:
     return {
         "row": 0,
@@ -45,26 +69,8 @@ def ansi256_to_hex(code: str):
         c = int(code, 10)
     except ValueError:
         return None
-    if c < 16:
-        base = [
-            "#000000",
-            "#800000",
-            "#008000",
-            "#808000",
-            "#000080",
-            "#800080",
-            "#008080",
-            "#c0c0c0",
-            "#808080",
-            "#ff0000",
-            "#00ff00",
-            "#ffff00",
-            "#0000ff",
-            "#ff00ff",
-            "#00ffff",
-            "#ffffff",
-        ]
-        return base[c]
+    if 0 <= c < 16:
+        return ALL_COLORS[c]
     if 16 <= c <= 231:
         idx = c - 16
         r = idx // 36
@@ -84,34 +90,15 @@ def basic_color(code: str):
         c = int(code, 10)
     except ValueError:
         return None
-    colors = [
-        "#000000",
-        "#800000",
-        "#008000",
-        "#808000",
-        "#000080",
-        "#800080",
-        "#008080",
-        "#c0c0c0",
-    ]
-    bright = [
-        "#808080",
-        "#ff0000",
-        "#00ff00",
-        "#ffff00",
-        "#0000ff",
-        "#ff00ff",
-        "#00ffff",
-        "#ffffff",
-    ]
+
     if 30 <= c <= 37:
-        return colors[c - 30]
+        return BASIC_COLORS[c - 30]
     if 90 <= c <= 97:
-        return bright[c - 90]
+        return BRIGHT_COLORS[c - 90]
     if 40 <= c <= 47:
-        return colors[c - 40]
+        return BASIC_COLORS[c - 40]
     if 100 <= c <= 107:
-        return bright[c - 100]
+        return BRIGHT_COLORS[c - 100]
     return None
 
 

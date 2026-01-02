@@ -14,7 +14,8 @@ PluginSettings {
     property bool autoRefresh: root.loadValue("autoRefresh", false)
     property string commandTimeout: String(root.loadValue("commandTimeout", "1"))
     property string refreshInterval: String(root.loadValue("refreshInterval", "5"))
-    property string fontSize: String(root.loadValue("fontSize", defaultFontSize))
+    property int fontSize: String(root.loadValue("fontSize", defaultFontSize))
+    property int backgroundOpacity: root.loadValue("backgroundOpacity", 50)
 
     function sanitizeIntInput(textValue, fallback) {
         const cleaned = String(textValue ?? "").replace(/[^0-9]/g, "")
@@ -28,6 +29,14 @@ PluginSettings {
             cleaned = cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, "")
         }
         return cleaned.length > 0 ? cleaned : String(fallback)
+    }
+
+    StyledText {
+        text: I18n.tr("Command Settings")
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Font.Medium
+        color: Theme.surfaceText
+        opacity: autoRefreshToggle.checked ? 1.0 : 0.3
     }
 
     Column {
@@ -77,7 +86,7 @@ PluginSettings {
             }
 
             StyledText {
-                text: I18n.tr("Maximum amount of time to run the command. Important when running commands taht never exit, like TUI apps.")
+                text: I18n.tr("Maximum amount of time to run the command.<br />Important when running commands taht never exit, like TUI apps.")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 wrapMode: Text.WordWrap
@@ -95,40 +104,6 @@ PluginSettings {
                 onEditingFinished: {
                     commandTimeout = sanitizeDecimalInput(text, "1")
                     text = commandTimeout
-                }
-            }
-        }
-
-        Column {
-            spacing: Theme.spacingXS
-            width: parent.width
-
-            StyledText {
-                text: I18n.tr("Font Size (px)")
-                font.pixelSize: Theme.fontSizeMedium
-                font.weight: Font.Medium
-                color: Theme.surfaceText
-            }
-
-            StyledText {
-                text: I18n.tr("Default monospace font is being used, but you can set a custom size.")
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.surfaceVariantText
-                wrapMode: Text.WordWrap
-            }
-
-            DankTextField {
-                id: fontSizeField
-                width: parent.width
-                height: 40
-                text: fontSize
-                placeholderText: String(defaultFontSize)
-                backgroundColor: Theme.surfaceContainer
-                textColor: Theme.surfaceText
-
-                onEditingFinished: {
-                    fontSize = sanitizeIntInput(text, defaultFontSize)
-                    text = fontSize
                 }
             }
         }
@@ -198,7 +173,7 @@ PluginSettings {
         }
 
         DankButton {
-            text: I18n.tr("Save changes")
+            text: I18n.tr("Save command settings")
             width: parent.width
             onClicked: {
                 command = commandField.text.trim()
@@ -219,6 +194,48 @@ PluginSettings {
                 timeoutField.text = commandTimeout
                 intervalField.text = refreshInterval
                 fontSizeField.text = fontSize
+            }
+        }
+
+        Column {
+            topPadding: Theme.spacingL*2
+            spacing: Theme.spacingXS
+            width: parent.width
+
+            StyledText {
+                text: I18n.tr("Appearance Settings")
+                font.pixelSize: Theme.fontSizeLarge
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            Item {
+                width: parent.width
+                height: Theme.spacingM
+            }
+
+            SliderSetting {
+                settingKey: "fontSize"
+                label: I18n.tr("Font size (px)")
+                description: I18n.tr("Default monospace font is being used,<br />but you can set a custom size.")
+                defaultValue: fontSize
+                minimum: 8
+                maximum: 100
+                unit: "px"
+            }
+
+            Item {
+                width: parent.width
+                height: Theme.spacingM
+            }
+
+            SliderSetting {
+                settingKey: "backgroundOpacity"
+                label: I18n.tr("Background Opacity")
+                defaultValue: backgroundOpacity
+                minimum: 0
+                maximum: 100
+                unit: "%"
             }
         }
     }
