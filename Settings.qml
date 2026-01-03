@@ -12,6 +12,7 @@ PluginSettings {
     property int defaultFontSize: Theme.fontSizeSmall
     property string command: root.loadValue("command", defaultCommand)
     property bool autoRefresh: root.loadValue("autoRefresh", false)
+    property bool useDank16: root.loadValue("useDank16", true)
     property string commandTimeout: String(root.loadValue("commandTimeout", "1"))
     property string refreshInterval: String(root.loadValue("refreshInterval", "5"))
     property int fontSize: String(root.loadValue("fontSize", defaultFontSize))
@@ -231,6 +232,18 @@ PluginSettings {
                 minimum: 0
                 maximum: 100
                 unit: "%"
+            }
+
+            Item {
+                width: parent.width
+                height: Theme.spacingM
+            }
+
+            ToggleSetting {
+                settingKey: "useDank16"
+                label: I18n.tr("Use Dank16 Colorscheme")
+                description: I18n.tr("Will be applied after the next refresh.")
+                defaultValue: useDank16
             }
         }
     }

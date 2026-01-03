@@ -9,6 +9,6 @@
   "component": "./Widget.qml",
   "icon": "terminal",
   "settings": "./Settings.qml",
-  "requires_dms": ">=1.2.0",
+  "requires_dms": ">=1.3.0",
   "permissions": ["settings_read", "settings_write"]
 }

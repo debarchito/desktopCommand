@@ -5,6 +5,7 @@ converts its ANSI output to HTML.
 """
 import argparse
 import fcntl
+import json
 import os
 import pty
 import re
@@ -17,7 +18,7 @@ import time
 import sys
 from typing import List, Dict, Any
 
-BASIC_COLORS = (
+DEFAULT_BASIC_COLORS = (
     "#000000",
     "#800000",
     "#008000",
@@ -28,7 +29,7 @@ BASIC_COLORS = (
     "#c0c0c0",
 )
 
-BRIGHT_COLORS = (
+DEFAULT_BRIGHT_COLORS = (
     "#808080",
     "#ff0000",
     "#00ff00",
@@ -39,7 +40,22 @@ BRIGHT_COLORS = (
     "#ffffff",
 )
 
+BASIC_COLORS = DEFAULT_BASIC_COLORS
+BRIGHT_COLORS = DEFAULT_BRIGHT_COLORS
 ALL_COLORS = BASIC_COLORS + BRIGHT_COLORS
+
+
+def set_color_palette(color_map: Dict[str, Any]) -> None:
+    values = []
+    for i in range(16):
+        val = color_map.get(f"color{i}")
+        if not (isinstance(val, str) and re.match(r"^#[0-9a-fA-F]{6}$", val)):
+            return
+        values.append(val)
+    global BASIC_COLORS, BRIGHT_COLORS, ALL_COLORS
+    BASIC_COLORS = tuple(values[:8])
+    BRIGHT_COLORS = tuple(values[8:])
+    ALL_COLORS = BASIC_COLORS + BRIGHT_COLORS
 
 def create_state() -> Dict[str, Any]:
     return {
@@ -366,6 +382,11 @@ def parse_args():
     parser.add_argument("--height", type=int, required=True, help="Pseudo-terminal height (rows).")
     parser.add_argument("--timeout", type=float, required=True, help="Timeout in seconds.")
     parser.add_argument("--raw", type=int, default=0, help="Return raw command output when set to 1.")
+    parser.add_argument(
+        "--colors",
+        type=str,
+        help="JSON map of color0-color15 to hex values for the 16-color palette.",
+    )
     parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command to run after '--'.")
     args = parser.parse_args()
     command = args.cmd
@@ -373,7 +394,7 @@ def parse_args():
         command = command[1:]
     if not command:
         parser.error("No command specified. Usage: wrapCommand --width=80 --height=40 --timeout=3 -- cmd")
-    return args.width, args.height, args.timeout, bool(args.raw), command
+    return args.width, args.height, args.timeout, bool(args.raw), command, args.colors
 
 
 def set_winsize(fd: int, rows: int, cols: int) -> None:
@@ -432,7 +453,14 @@ def run_command(cols: int, rows: int, timeout_sec: float, command: List[str]) ->
 
 
 def main():
-    width, height, timeout_sec, raw_output, command = parse_args()
+    width, height, timeout_sec, raw_output, command, colors_json = parse_args()
+    if colors_json:
+        try:
+            parsed_colors = json.loads(colors_json)
+            if isinstance(parsed_colors, dict):
+                set_color_palette(parsed_colors)
+        except json.JSONDecodeError:
+            pass
     raw_text = run_command(width, height, timeout_sec, command)
     if raw_output:
         sys.stdout.write(raw_text)

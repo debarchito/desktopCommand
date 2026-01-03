@@ -18,10 +18,12 @@ DesktopPluginComponent {
     property int cols: 0
     property var windowRef: null
     property int fontSizePx: normalizeFontSize(pluginData.fontSize)
+    property bool useDank16: (pluginData.useDank16 ?? true) && Theme.dank16 !== null
     property real backgroundOpacity: (pluginData.backgroundOpacity ?? 50) / 100
     property string pluginUrl: ""
     property string pluginDir: ""
     property string wrapCommandPath: ""
+    property var dank16: Theme.isLightMode ? Theme.dank16.light : Theme.dank16.dark
 
     FontMetrics {
         id: fontMetrics
@@ -167,9 +169,15 @@ DesktopPluginComponent {
             console.warn(`[desktopCommand] runCommand skipped; process already running; command="${root.command}"`)
             return
         }
-
         root.updateTerminalSize()
-        process.command = ["sh", "-c", `"${root.wrapCommandPath}" --width=${root.cols} --height=${root.rows} --timeout=${root.commandTimeout} -- ${root.command}`]
+
+        let command = `"${root.wrapCommandPath}" --width=${root.cols} --height=${root.rows} --timeout=${root.commandTimeout} `
+        if (root.useDank16) {
+            command += `--colors='${JSON.stringify(root.dank16)}' `
+        }
+        command += `-- ${root.command}`
+
+        process.command = ["sh", "-c", command]
         process.running = true
     }
 
@@ -211,7 +219,7 @@ DesktopPluginComponent {
             text: root.output
             textFormat: Text.RichText
             wrapMode: Text.NoWrap
-            color: Theme.surfaceText
+            color: useDank16? Theme.surfaceText : "#c0c0c0"
             font.pixelSize: root.fontSizePx
             font.family: Theme.monoFontFamily
             horizontalAlignment: Text.AlignLeft
