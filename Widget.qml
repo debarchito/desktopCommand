@@ -37,6 +37,15 @@ DesktopPluginComponent {
         onTriggered: runCommand()
     }
 
+    // workaround for widget being spawned with weird size initially
+    Timer {
+        id: initialRunTimer
+        interval: 1000
+        repeat: false
+        running: false
+        onTriggered: root.handleVisibilityChange("timer")
+    }
+
     Component.onCompleted: {
         root.windowRef = Window.window ?? null
         root.handleVisibilityChange("completed")
@@ -57,29 +66,15 @@ DesktopPluginComponent {
         root.handleVisibilityChange("root.visible")
     }
 
-    onWidthChanged: root.handleVisibilityChange("sizeChanged")
-    onHeightChanged: root.handleVisibilityChange("sizeChanged")
+    onWidgetWidthChanged: root.handleVisibilityChange("sizeChanged")
+    onWidgetHeightChanged: root.handleVisibilityChange("sizeChanged")
 
     Component.onDestruction: {
         root.stopAllActivity("destruction")
     }
 
     onCommandChanged: {
-        if (!root.isRunnable()) {
-            root.hasRunInitial = false
-            timer.stop()
-            return
-        }
-        if (!root.hasRunInitial) {
-            root.hasRunInitial = true
-            runCommand()
-            timer.running = root.autoRefresh && root.isRunnable()
-        } else {
-            runCommand()
-            if (root.autoRefresh) {
-                timer.restart()
-            }
-        }
+        handleVisibilityChange("commandChanged")
     }
 
     onAutoRefreshChanged: {
@@ -122,16 +117,40 @@ DesktopPluginComponent {
     function isRunnable() {
         const win = root.windowRef
         const winVisible = win === null ? true : !!win.visible
-        return root.visible && winVisible && root.width > 0 && root.height > 0
+
+        // in other weird cases, it will just start on timer with 2s delay
+
+        return root.visible && winVisible && root.widgetWidth > 0 && root.widgetHeight > 0
+    }
+
+    function isStartingEdgeCase(){
+        if (root.widgetWidth == 500 || root.widgetWidth == 200) {
+            initialRunTimer.start()
+            return true
+        }
+
+        if (root.widgetHeight == 500 || root.widgetHeight == 200) {
+            initialRunTimer.start()
+            return true
+        }
+
+        return false
     }
 
     function handleVisibilityChange(source) {
+        if(source == "commandChanged"){
+            root.hasRunInitial = false
+        }
         if (!root.isRunnable()) {
             root.stopAllActivity(source)
             return
         }
         if (!root.hasRunInitial) {
+            if(root.isStartingEdgeCase() && source != "timer"){
+                return
+            }
             root.hasRunInitial = true
+            initialRunTimer.stop()
             runCommand()
         }
         if (root.autoRefresh) {
@@ -148,6 +167,7 @@ DesktopPluginComponent {
             console.warn(`[desktopCommand] runCommand skipped; process already running; command="${root.command}"`)
             return
         }
+
         root.updateTerminalSize()
         process.command = ["sh", "-c", `"${root.wrapCommandPath}" --width=${root.cols} --height=${root.rows} --timeout=${root.commandTimeout} -- ${root.command}`]
         process.running = true
@@ -156,8 +176,8 @@ DesktopPluginComponent {
     function updateTerminalSize() {
         const horizontalMargin = 0
         const verticalMargin = 0
-        const availableWidth = Math.max(0, (root.widgetWidth ?? root.width) - horizontalMargin)
-        const availableHeight = Math.max(0, (root.widgetHeight ?? root.height) - verticalMargin)
+        const availableWidth = Math.max(200, (root.widgetWidth ?? root.width) - horizontalMargin)
+        const availableHeight = Math.max(200, (root.widgetHeight ?? root.height) - verticalMargin)
 
         root.cols = Math.max(1, Math.floor(availableWidth / Math.max(1, fontMetrics.averageCharacterWidth)))
         root.rows = Math.max(1, Math.floor(availableHeight / Math.max(1, fontMetrics.lineSpacing)))

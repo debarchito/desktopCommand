@@ -36,7 +36,6 @@ PluginSettings {
         font.pixelSize: Theme.fontSizeLarge
         font.weight: Font.Medium
         color: Theme.surfaceText
-        opacity: autoRefreshToggle.checked ? 1.0 : 0.3
     }
 
     Column {
@@ -187,13 +186,9 @@ PluginSettings {
                 refreshInterval = sanitizeDecimalInput(intervalField.text, "5")
                 root.saveValue("refreshInterval", refreshInterval)
 
-                fontSize = sanitizeIntInput(fontSizeField.text, defaultFontSize)
-                root.saveValue("fontSize", fontSize)
-
                 commandField.text = command
                 timeoutField.text = commandTimeout
                 intervalField.text = refreshInterval
-                fontSizeField.text = fontSize
             }
         }
 
