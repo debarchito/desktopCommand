@@ -175,7 +175,7 @@ DesktopPluginComponent {
         if (root.useDank16) {
             command += `--colors='${JSON.stringify(root.dank16)}' `
         }
-        command += `-- ${root.command}`
+        command += `-- ${JSON.stringify(root.command)}`
 
         process.command = ["sh", "-c", command]
         process.running = true
@@ -183,7 +183,7 @@ DesktopPluginComponent {
 
     function updateTerminalSize() {
         const horizontalMargin = 0
-        const verticalMargin = 0
+        const verticalMargin = 8
         const availableWidth = Math.max(200, (root.widgetWidth ?? root.width) - horizontalMargin)
         const availableHeight = Math.max(200, (root.widgetHeight ?? root.height) - verticalMargin)
 

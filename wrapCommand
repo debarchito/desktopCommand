@@ -11,12 +11,13 @@ import pty
 import re
 import select
 import signal
+import shlex
 import struct
 import subprocess
 import termios
 import time
 import sys
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 DEFAULT_BASIC_COLORS = (
     "#000000",
@@ -191,60 +192,55 @@ def apply_sgr(state: Dict[str, Any], code_str: str) -> None:
         i += 1
 
 
-def apply_csi(state: Dict[str, Any], params: str, code: str) -> None:
-    cleaned = re.sub(r"\?", "", params)
-    parts = [] if cleaned == "" else [p for p in cleaned.split(";") if p != ""]
+def apply_csi(state: Dict[str, Any], params: Optional[str], code: str) -> None:
+    if params is None:
+        cleaned = ""
+        parts: List[str] = []
+    else:
+        cleaned = re.sub(r"\?", "", params)
+        parts = [] if cleaned == "" else [p for p in cleaned.split(";") if p != ""]
     first = int(parts[0]) if parts and parts[0].isdigit() else None
     mode = parts[0] if parts else ""
-    is_private = "?" in params
+    is_private = params is not None and "?" in params
 
     if code == "m":
         apply_sgr(state, cleaned)
-        return
-    if code == "d":
+    elif code == "d":
         set_cursor(state, max(0, (first or 1) - 1), state["col"])
-        return
-    if code == "a":
+    elif code == "a":
         set_cursor(state, state["row"], state["col"] + (first or 1))
-        return
-    if code == "e":
+    elif code == "e":
         set_cursor(state, state["row"] + (first or 1), state["col"])
-        return
-    if code == "`":
+    elif code == "`":
         set_cursor(state, state["row"], max(0, (first or 1) - 1))
-        return
-
-    if code in ("h", "l"):
-        if mode == "1049":
-            if code == "h":
-                state["lines"] = [[]]
-                set_cursor(state, 0, 0)
-                state["ignoreClearsAfterAltExit"] = False
-            else:
-                set_cursor(state, 0, 0)
-                state["ignoreClearsAfterAltExit"] = True
-        return
-
-    if code == "s":
+    elif code in ("h", "l") and mode == "1049":
+        if code == "h":
+            state["lines"] = [[]]
+            set_cursor(state, 0, 0)
+            state["ignoreClearsAfterAltExit"] = False
+        else:
+            set_cursor(state, 0, 0)
+            state["ignoreClearsAfterAltExit"] = True
+    elif code in ("h", "l") and is_private:
+        pass
+    elif code in ("h", "l"):
+        pass
+    elif code == "s":
         state["savedRow"] = state["row"]
         state["savedCol"] = state["col"]
-        return
-
-    if code == "u":
+    elif code == "u":
         set_cursor(state, state.get("savedRow", 0), state.get("savedCol", 0))
-        return
-
-    if code in ("h", "l") and is_private:
-        return
-
-    if code == "A":
+    elif code == "A":
         set_cursor(state, state["row"] - (first or 1), state["col"])
     elif code == "B":
         set_cursor(state, state["row"] + (first or 1), state["col"])
     elif code == "C":
         set_cursor(state, state["row"], state["col"] + (first or 1))
     elif code == "D":
-        set_cursor(state, state["row"], max(0, state["col"] - (first or 1)))
+        if params is None:
+            set_cursor(state, state["row"] + 1, state["col"])
+        else:
+            set_cursor(state, state["row"], max(0, state["col"] - (first or 1)))
     elif code == "G":
         set_cursor(state, state["row"], max(0, (first or 1) - 1))
     elif code in ("H", "f"):
@@ -252,9 +248,22 @@ def apply_csi(state: Dict[str, Any], params: str, code: str) -> None:
         col_val = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
         set_cursor(state, row_val - 1, max(0, col_val - 1))
     elif code == "E":
-        set_cursor(state, state["row"] + (first or 1), 0)
+        if params is None:
+            set_cursor(state, state["row"] + 1, 0)
+        else:
+            set_cursor(state, state["row"] + (first or 1), 0)
     elif code == "F":
         set_cursor(state, max(0, state["row"] - (first or 1)), 0)
+    elif code == "M":
+        if params is None:
+            set_cursor(state, max(0, state["row"] - 1), state["col"])
+        else:
+            delete_count = first or 1
+            for _ in range(delete_count):
+                if state["row"] < len(state["lines"]):
+                    state["lines"].pop(state["row"])
+                state["lines"].append([])
+            ensure_line(state, state["row"])
     elif code == "K":
         ensure_line(state, state["row"])
         line = state["lines"][state["row"]]
@@ -264,21 +273,20 @@ def apply_csi(state: Dict[str, Any], params: str, code: str) -> None:
     elif code == "J":
         ensure_line(state, state["row"])
         mode_num = 0 if first is None else first
-        if state["ignoreClearsAfterAltExit"]:
-            return
-        if mode_num == 2:
-            state["lines"] = [[]]
-            set_cursor(state, 0, 0)
-        else:
-            for r in range(state["row"], len(state["lines"])):
-                line = state["lines"][r]
-                start = state["col"] if r == state["row"] else 0
-                for i in range(start, len(line)):
-                    line[i] = {"ch": " ", "style": ""}
+        if not state["ignoreClearsAfterAltExit"]:
+            if mode_num == 2:
+                state["lines"] = [[]]
+                set_cursor(state, 0, 0)
+            else:
+                for r in range(state["row"], len(state["lines"])):
+                    line = state["lines"][r]
+                    start = state["col"] if r == state["row"] else 0
+                    for i in range(start, len(line)):
+                        line[i] = {"ch": " ", "style": ""}
     elif code == "r":
         set_cursor(state, 0, 0)
     elif code == "t":
-        return
+        pass
 
 
 def write_char(state: Dict[str, Any], ch: str) -> None:
@@ -323,13 +331,7 @@ def parse_ansi(state: Dict[str, Any], text: str) -> None:
             continue
         esc_move = re.match(r"^\x1b([DEM])", slice_text)
         if esc_move:
-            code = esc_move.group(1)
-            if code == "D":
-                set_cursor(state, state["row"] + 1, state["col"])
-            elif code == "E":
-                set_cursor(state, state["row"] + 1, 0)
-            elif code == "M":
-                set_cursor(state, max(0, state["row"] - 1), state["col"])
+            apply_csi(state, None, esc_move.group(1))
             index = esc_index + len(esc_move.group(0))
             continue
         simple_esc = re.match(r"^\x1b[\(\)][A-Za-z0-9]", slice_text)
@@ -394,6 +396,17 @@ def parse_args():
         command = command[1:]
     if not command:
         parser.error("No command specified. Usage: wrapCommand --width=80 --height=40 --timeout=3 -- cmd")
+    if len(command) == 1:
+        single = command[0]
+        if re.search(r"[|&;<>()$`!{}\n]", single):
+            command = ["sh", "-c", single]
+        else:
+            try:
+                split_cmd = shlex.split(single)
+                if split_cmd:
+                    command = split_cmd
+            except ValueError:
+                pass
     return args.width, args.height, args.timeout, bool(args.raw), command, args.colors
 
 
