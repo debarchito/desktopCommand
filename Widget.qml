@@ -140,7 +140,7 @@ DesktopPluginComponent {
     }
 
     function handleVisibilityChange(source) {
-        if(source == "commandChanged"){
+        if(source == "commandChanged" || source == "root.visible"){
             root.hasRunInitial = false
         }
         if (!root.isRunnable()) {
