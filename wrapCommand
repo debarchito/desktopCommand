@@ -370,7 +370,8 @@ def lines_to_html(lines: List[List[Dict[str, str]]]) -> str:
 
 def strip_unhandled_control_codes(raw_text: str) -> str:
     # Remove control characters we don't explicitly handle (e.g. SI/SO 0x0e/0x0f) to avoid stray glyphs
-    return re.sub(r"[\x00-\x08\x0b-\x0c\x0e-\x0f\x10-\x1a\x1c-\x1f\x7f]", "", raw_text)
+    # Keep controls we do handle like backspace (0x08), tab/newline/carriage return.
+    return re.sub(r"[\x00-\x07\x0b-\x0c\x0e-\x0f\x10-\x1a\x1c-\x1f\x7f]", "", raw_text)
 
 
 def ansi_to_html(raw_text: str) -> str:
