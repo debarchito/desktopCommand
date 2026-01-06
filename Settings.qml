@@ -3,6 +3,8 @@ import QtQuick.Controls
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
+import QtQuick.Controls.Material
+
 
 PluginSettings {
     id: root
@@ -17,6 +19,10 @@ PluginSettings {
     property string refreshInterval: String(root.loadValue("refreshInterval", "5"))
     property int fontSize: String(root.loadValue("fontSize", defaultFontSize))
     property int backgroundOpacity: root.loadValue("backgroundOpacity", 50)
+    property bool enableBorder: root.loadValue("enableBorder", false)
+    property int borderThickness: root.loadValue("borderThickness", 1)
+    property int borderOpacity: root.loadValue("borderOpacity", 100)
+    property color borderColor: root.loadValue("borderColor", Theme.primary)
 
     function sanitizeIntInput(textValue, fallback) {
         const cleaned = String(textValue ?? "").replace(/[^0-9]/g, "")
@@ -77,6 +83,8 @@ PluginSettings {
         Column {
             spacing: Theme.spacingXS
             width: parent.width
+            anchors.left: parent.left
+            anchors.right: parent.right
 
             StyledText {
                 text: I18n.tr("Command Timeout (seconds)")
@@ -111,16 +119,26 @@ PluginSettings {
         Column {
             spacing: Theme.spacingS
             width: parent.width
+            anchors.left: parent.left
+            anchors.right: parent.right
 
             CheckBox {
                 id: autoRefreshToggle
                 checked: autoRefresh
+                anchors.left: parent.left
+                leftPadding: Theme.spacingS
+                Material.accent: Theme.primary
+
+                Component.onCompleted: {
+                    this.indicator.anchors.left = this.left
+                    this.indicator.anchors.leftMargin = Theme.spacingM
+                }
 
                 contentItem: StyledText {
                     text: I18n.tr("Auto Refresh")
                     font.pixelSize: Theme.fontSizeMedium
                     color: Theme.surfaceText
-                    leftPadding: autoRefreshToggle.indicator.width + 8
+                    leftPadding: autoRefreshToggle.indicator.width + Theme.spacingM + Theme.spacingS
                     verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -143,7 +161,7 @@ PluginSettings {
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Medium
                 color: Theme.surfaceText
-                opacity: autoRefreshToggle.checked ? 1.0 : 0.3
+                opacity: autoRefreshToggle.checked ? 1.0 : 0.2
             }
 
             StyledText {
@@ -151,7 +169,7 @@ PluginSettings {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 wrapMode: Text.WordWrap
-                opacity: autoRefreshToggle.checked ? 1.0 : 0.3
+                opacity: autoRefreshToggle.checked ? 1.0 : 0.2
             }
 
             DankTextField {
@@ -163,7 +181,7 @@ PluginSettings {
                 backgroundColor: Theme.surfaceContainer
                 textColor: Theme.surfaceText
                 enabled: autoRefreshToggle.checked
-                opacity: autoRefreshToggle.checked ? 1.0 : 0.3
+                opacity: autoRefreshToggle.checked ? 1.0 : 0.2
 
                 onEditingFinished: {
                     refreshInterval = sanitizeDecimalInput(text, "5")
@@ -232,6 +250,53 @@ PluginSettings {
                 minimum: 0
                 maximum: 100
                 unit: "%"
+            }
+
+            Item {
+                width: parent.width
+                height: Theme.spacingM
+            }
+
+            ToggleSetting {
+                id: borderToggle
+                settingKey: "enableBorder"
+                label: I18n.tr("Enable border")
+                defaultValue: enableBorder
+            }
+
+            SliderSetting {
+                opacity: enableBorder ? 1.0 : 0.2
+                enabled: enableBorder
+                settingKey: "borderThickness"
+                label: I18n.tr("Border Thickness")
+                defaultValue: borderThickness
+                minimum: 1
+                maximum: 10
+                unit: "px"
+            }
+
+            SliderSetting {
+                opacity: enableBorder ? 1.0 : 0.2
+                enabled: enableBorder
+                settingKey: "borderOpacity"
+                label: I18n.tr("Border Opacity")
+                defaultValue: borderOpacity
+                minimum: 0
+                maximum: 100
+                unit: "%"
+            }
+
+            SelectionSetting {
+                opacity: enableBorder ? 1.0 : 0.2
+                enabled: enableBorder
+                settingKey: "borderColor"
+                label: I18n.tr("Border Color")
+                options: [
+                    { label: I18n.tr("Primary"), value: Theme.primary },
+                    { label: I18n.tr("Secondary"), value: Theme.secondary },
+                    { label: I18n.tr("Surface"), value: Theme.surfaceText },
+                ]
+                defaultValue: borderColor
             }
 
             Item {

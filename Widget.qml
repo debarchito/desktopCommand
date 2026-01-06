@@ -20,6 +20,10 @@ DesktopPluginComponent {
     property int fontSizePx: normalizeFontSize(pluginData.fontSize)
     property bool useDank16: (pluginData.useDank16 ?? true) && Theme.dank16 !== null
     property real backgroundOpacity: (pluginData.backgroundOpacity ?? 50) / 100
+    property bool enableBorder: pluginData.enableBorder ?? false
+    property int borderThickness: pluginData.borderThickness ?? 2
+    property real borderOpacity: (pluginData.borderOpacity ?? 100) / 100
+    property color borderColor: pluginData.borderColor ?? Theme.primary
     property string pluginUrl: ""
     property string pluginDir: ""
     property string wrapCommandPath: ""
@@ -212,6 +216,8 @@ DesktopPluginComponent {
         radius: Theme.cornerRadius
         color: Theme.withAlpha(Theme.surfaceContainer, root.backgroundOpacity)
         visible: root.visible
+        border.width: root.enableBorder ? root.borderThickness : 0
+        border.color: Theme.withAlpha(root.borderColor, root.borderOpacity)
 
         Text {
             anchors.fill: parent
