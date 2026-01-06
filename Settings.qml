@@ -22,7 +22,14 @@ PluginSettings {
     property bool enableBorder: root.loadValue("enableBorder", false)
     property int borderThickness: root.loadValue("borderThickness", 1)
     property int borderOpacity: root.loadValue("borderOpacity", 100)
-    property color borderColor: root.loadValue("borderColor", Theme.primary)
+    property string borderColor: {
+        let setting = root.loadValue("borderColor", "primary")
+        if(["primary", "secondary", "surface"].includes(setting)) {
+            return setting
+        } else {
+            return "primary"
+        }
+    }
 
     function sanitizeIntInput(textValue, fallback) {
         const cleaned = String(textValue ?? "").replace(/[^0-9]/g, "")
@@ -292,9 +299,9 @@ PluginSettings {
                 settingKey: "borderColor"
                 label: I18n.tr("Border Color")
                 options: [
-                    { label: I18n.tr("Primary"), value: Theme.primary },
-                    { label: I18n.tr("Secondary"), value: Theme.secondary },
-                    { label: I18n.tr("Surface"), value: Theme.surfaceText },
+                    { label: I18n.tr("Primary"), value: "primary" },
+                    { label: I18n.tr("Secondary"), value: "secondary" },
+                    { label: I18n.tr("Surface"), value: "surface" },
                 ]
                 defaultValue: borderColor
             }

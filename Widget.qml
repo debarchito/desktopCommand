@@ -23,7 +23,18 @@ DesktopPluginComponent {
     property bool enableBorder: pluginData.enableBorder ?? false
     property int borderThickness: pluginData.borderThickness ?? 1
     property real borderOpacity: (pluginData.borderOpacity ?? 100) / 100
-    property color borderColor: pluginData.borderColor ?? Theme.primary
+    property string borderColor: pluginData.borderColor ?? "primary"
+    property color resolvedBorderColor: {
+        if (root.borderColor === "primary") {
+            return Theme.primary
+        } else if (root.borderColor === "secondary") {
+            return Theme.secondary
+        } else if (root.borderColor === "surface") {
+            return Theme.surfaceText
+        } else {
+            return Theme.primary
+        }
+    }
     property string pluginUrl: ""
     property string pluginDir: ""
     property string wrapCommandPath: ""
@@ -217,7 +228,7 @@ DesktopPluginComponent {
         color: Theme.withAlpha(Theme.surfaceContainer, root.backgroundOpacity)
         visible: root.visible
         border.width: root.enableBorder ? root.borderThickness : 0
-        border.color: Theme.withAlpha(root.borderColor, root.borderOpacity)
+        border.color: Theme.withAlpha(root.resolvedBorderColor, root.borderOpacity)
 
         Text {
             anchors.fill: parent
