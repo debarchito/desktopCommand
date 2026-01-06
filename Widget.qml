@@ -21,7 +21,7 @@ DesktopPluginComponent {
     property bool useDank16: (pluginData.useDank16 ?? true) && Theme.dank16 !== null
     property real backgroundOpacity: (pluginData.backgroundOpacity ?? 50) / 100
     property bool enableBorder: pluginData.enableBorder ?? false
-    property int borderThickness: pluginData.borderThickness ?? 2
+    property int borderThickness: pluginData.borderThickness ?? 1
     property real borderOpacity: (pluginData.borderOpacity ?? 100) / 100
     property color borderColor: pluginData.borderColor ?? Theme.primary
     property string pluginUrl: ""
